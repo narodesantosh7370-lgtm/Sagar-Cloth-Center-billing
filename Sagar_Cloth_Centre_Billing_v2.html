@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>सागर क्लॉथ सेंटर - Billing & Stock</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f3f4f6;color:#111827}
+header{background:#111827;color:#fff;padding:18px;text-align:center}header h1{margin:0;font-size:25px}header p{margin:6px 0 0;font-size:13px}
+nav{display:flex;gap:5px;padding:7px;background:#fff;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px #0002;overflow:auto}
+nav button{flex:1;min-width:78px;padding:10px 5px;border:0;border-radius:8px;background:#e5e7eb;font-weight:bold}
+nav button.active{background:#111827;color:#fff}
+main{max-width:1000px;margin:auto;padding:12px}.page{display:none}.page.active{display:block}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
+h2{margin-top:0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input,select{width:100%;padding:11px;margin:5px 0 10px;border:1px solid #bbb;border-radius:7px;font-size:16px}
+button{cursor:pointer}.primary,.success,.danger,.secondary{border:0;padding:10px 13px;border-radius:7px;font-weight:bold}
+.primary{background:#2563eb;color:#fff}.success{background:#16a34a;color:#fff}.danger{background:#dc2626;color:#fff}.secondary{background:#e5e7eb;color:#111827}
+.status{padding:9px;border-radius:7px;background:#eef2ff;margin:8px 0}.scanbox{max-width:520px;margin:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th{background:#f3f4f6}
+.total{font-size:19px;font-weight:bold;text-align:right;margin-top:8px}.big{font-size:25px}.low{color:#dc2626;font-weight:bold}
+.badge{display:inline-block;padding:5px 8px;border-radius:12px;font-size:12px;font-weight:bold}.cash{background:#dcfce7;color:#166534}.credit{background:#fee2e2;color:#991b1b}
+.bill-head{text-align:center;border-bottom:1px dashed #555;padding-bottom:8px}.bill-foot{text-align:center;border-top:1px dashed #555;margin-top:14px;padding-top:10px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kpi{background:#f9fafb;padding:13px;border-radius:9px;text-align:center}
+.print-only{display:none}
+.label{font-weight:bold;font-size:13px}
+#reader{width:100%;margin-top:10px}
+.barcode-card{border:1px solid #ddd;padding:10px;text-align:center;margin:8px 0;background:#fff}
+@media(max-width:650px){.row{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}table{font-size:12px}nav button{min-width:68px;font-size:11px}}
+@media print{
+body{background:#fff}.no-print,nav,#homePage,#scannerPage,#stockPage,#productsPage,#accountsPage{display:none!important}
+#billingPage{display:block!important}.card{box-shadow:none;padding:0}.print-only{display:block}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>सागर क्लॉथ सेंटर</h1>
+<p>Billing • Stock • QR/Barcode • उधारी खाते</p>
+</header>
+
+<nav class="no-print">
+<button onclick="showPage('homePage',this)" class="active">🏠 Home</button>
+<button onclick="showPage('billingPage',this)">🧾 Billing</button>
+<button onclick="showPage('scannerPage',this)">📷 Scan</button>
+<button onclick="showPage('stockPage',this)">📦 Stock</button>
+<button onclick="showPage('productsPage',this)">➕ Products</button>
+<button onclick="showPage('accountsPage',this)">👤 उधारी</button>
+</nav>
+
+<main>
+<section id="homePage" class="page active">
+<div class="card">
+<h2>Dashboard</h2>
+<div class="kpis">
+<div class="kpi"><b>Products</b><br><span id="dashProducts" class="big">0</span></div>
+<div class="kpi"><b>Total Stock</b><br><span id="dashStock" class="big">0</span></div>
+<div class="kpi"><b>एकूण उधारी</b><br>₹<span id="dashDue" class="big">0.00</span></div>
+</div>
+</div>
+<div class="card">
+<h2>मुख्य सुविधा</h2>
+<p>📷 Code स्कॅन → Product बिलात.</p>
+<p>📦 विक्री झाल्यावर Stock आपोआप कमी.</p>
+<p>💵 रोकड किंवा 🧾 उधारी वेगळी नोंद.</p>
+<p>👤 ग्राहकाच्या नावावर उधारी, भरलेली रक्कम आणि बाकी दिसेल.</p>
+<p>🏷️ प्रत्येक Product साठी QR आणि Barcode तयार करून प्रिंट करता येईल.</p>
+</div>
+</section>
+
+<section id="billingPage" class="page">
+<div class="card" id="billCard">
+<div class="bill-head">
+<h2>सागर क्लॉथ सेंटर</h2>
+<p>बीडसांगवी, ता. आष्टी, जि. बीड</p>
+<p>8888290004 / 9922233088</p>
+<h3>SALE BILL</h3>
+</div>
+
+<div class="no-print">
+<div class="row">
+<div><label class="label">Customer Name</label><input id="customer" placeholder="ग्राहकाचे नाव"></div>
+<div><label class="label">Mobile Number</label><input id="customerMobile" inputmode="numeric" placeholder="मोबाईल नंबर"></div>
+</div>
+<div class="row">
+<div><label class="label">Payment Type</label>
+<select id="paymentType" onchange="paymentChanged()">
+<option value="cash">रोकड / Cash</option>
+<option value="credit">उधारी / Credit</option>
+<option value="partial">अर्धे रोकड + उधारी</option>
+</select></div>
+<div><label class="label">Paid Amount (₹)</label><input id="paidAmount" type="number" min="0" value="0" oninput="renderCart()"></div>
+</div>
+</div>
+
+<p><b>Bill No:</b> <span id="billNo"></span> &nbsp; <b>Date:</b> <span id="billDate"></span></p>
+<p class="print-only"><b>ग्राहक:</b> <span id="printCustomer"></span> &nbsp; <b>मोबाईल:</b> <span id="printMobile"></span></p>
+
+<div class="no-print">
+<div class="row">
+<div><label class="label">Product Code</label><input id="codeInput" placeholder="उदा. SCC1001" onkeydown="if(event.key==='Enter')addByCode()"></div>
+<div style="display:flex;align-items:end;gap:6px">
+<button class="primary" style="flex:1" onclick="addByCode()">Add</button>
+<button class="secondary" style="flex:1" onclick="showPage('scannerPage')">📷 Scan</button>
+</div>
+</div>
+</div>
+
+<table>
+<thead><tr><th>Product</th><th>Rate</th><th>Qty</th><th>Amount</th><th class="no-print">Remove</th></tr></thead>
+<tbody id="cartBody"></tbody>
+</table>
+
+<div class="no-print">
+<label class="label">Discount (₹)</label><input id="discount" type="number" min="0" value="0" oninput="renderCart()">
+</div>
+<div class="total">Subtotal: ₹<span id="subtotal">0.00</span></div>
+<div class="total">Discount: ₹<span id="discountShow">0.00</span></div>
+<div class="total">Grand Total: ₹<span id="grandTotal">0.00</span></div>
+<div class="total">Paid: ₹<span id="paidShow">0.00</span></div>
+<div class="total">बाकी / Due: ₹<span id="dueShow">0.00</span></div>
+<p><b>Payment:</b> <span id="paymentBadge" class="badge cash">रोकड / Cash</span></p>
+
+<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+<button class="success" onclick="saveBill()">💾 Save Bill & Update Stock</button>
+<button class="primary" onclick="window.print()">🖨️ Print</button>
+<button class="secondary" onclick="newBill()">New Bill</button>
+</div>
+<div class="bill-foot">Thank you! Visit again.<br>सागर क्लॉथ सेंटर</div>
+</div>
+</section>
+
+<section id="scannerPage" class="page">
+<div class="card scanbox">
+<h2>📷 Product Scanner</h2>
+<p>Product चा QR/Barcode कॅमेरासमोर ठेवा.</p>
+<div id="reader"></div>
+<div id="scanStatus" class="status">Scanner सुरू करण्यासाठी बटण दाबा.</div>
+<button class="primary" onclick="startScanner()">Start Camera Scanner</button>
+<button class="secondary" onclick="stopScanner()">Stop</button>
+</div>
+</section>
+
+<section id="stockPage" class="page">
+<div class="card">
+<h2>📦 Stock</h2>
+<input id="stockSearch" placeholder="Product / Code search..." oninput="renderStock()">
+<table><thead><tr><th>Code</th><th>Product</th><th>Rate</th><th>Stock</th></tr></thead><tbody id="stockBody"></tbody></table>
+</div>
+</section>
+
+<section id="productsPage" class="page">
+<div class="card">
+<h2>➕ Add / Update Product</h2>
+<p>एक Product = एक Unique Code. हा Code QR/Barcode मध्ये वापरला जाईल.</p>
+<label class="label">Product Code</label><input id="pCode" placeholder="SCC1001">
+<label class="label">Product Name</label><input id="pName" placeholder="Shirt">
+<div class="row">
+<div><label class="label">Rate (₹)</label><input id="pRate" type="number" min="0" placeholder="599"></div>
+<div><label class="label">Stock Quantity</label><input id="pStock" type="number" min="0" placeholder="10"></div>
+</div>
+<button class="success" onclick="saveProduct()">Save Product</button>
+<button class="secondary" onclick="clearProductForm()">Clear</button>
+</div>
+<div class="card">
+<h2>Product Database</h2>
+<table><thead><tr><th>Code</th><th>Name</th><th>Rate</th><th>Stock</th><th>Code Print</th><th>Action</th></tr></thead>
+<tbody id="productBody"></tbody></table>
+</div>
+</section>
+
+<section id="accountsPage" class="page">
+<div class="card">
+<h2>👤 उधारी खाती</h2>
+<input id="accountSearch" placeholder="ग्राहकाचे नाव / मोबाईल शोधा" oninput="renderAccounts()">
+<table><thead><tr><th>Customer</th><th>Mobile</th><th>एकूण बिल</th><th>भरले</th><th>बाकी</th></tr></thead>
+<tbody id="accountsBody"></tbody></table>
+</div>
+<div class="card">
+<h2>उधारी व्यवहार</h2>
+<table><thead><tr><th>Bill</th><th>Customer</th><th>Date</th><th>Type</th><th>Total</th><th>Paid</th><th>Due</th></tr></thead>
+<tbody id="creditBody"></tbody></table>
+</div>
+</section>
+</main>
+
+<!-- QR/Barcode print modal -->
+<div id="codeModal" style="display:none;position:fixed;inset:0;background:#0008;z-index:50;padding:15px">
+<div class="card" style="max-width:430px;margin:30px auto;text-align:center">
+<h2 id="modalTitle">Product Code</h2>
+<div id="qrcode" style="display:inline-block;margin:10px"></div>
+<svg id="barcode"></svg>
+<p><b id="modalCode"></b></p>
+<button class="primary" onclick="printCode()">🖨️ Print Code</button>
+<button class="secondary" onclick="closeCode()">Close</button>
+</div>
+</div>
+
+<script>
+const KEY='scc_products_v2', BILLS='scc_bills_v2', BILLKEY='scc_bill_no_v2';
+let products=JSON.parse(localStorage.getItem(KEY)||'[]');
+let bills=JSON.parse(localStorage.getItem(BILLS)||'[]');
+let cart=[], scanner=null, codeForPrint=null;
+
+if(products.length===0){
+ products=[
+  {code:'SCC1001',name:'Shirt',rate:599,stock:10},
+  {code:'SCC1002',name:'Pant',rate:799,stock:8},
+  {code:'SCC1003',name:'Saree',rate:1299,stock:15}
+ ];
+ saveProducts();
+}
+function saveProducts(){localStorage.setItem(KEY,JSON.stringify(products));updateDashboard();renderStock();renderProducts();}
+function saveBills(){localStorage.setItem(BILLS,JSON.stringify(bills));updateDashboard();renderAccounts();}
+function money(n){return Number(n||0).toFixed(2)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function updateDashboard(){
+ document.getElementById('dashProducts').textContent=products.length;
+ document.getElementById('dashStock').textContent=products.reduce((a,p)=>a+Number(p.stock||0),0);
+ document.getElementById('dashDue').textContent=money(bills.reduce((a,b)=>a+Number(b.due||0),0));
+}
+function showPage(id,btn){
+ document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+ if(id!=='scannerPage')stopScanner();
+ if(id==='stockPage')renderStock();
+ if(id==='productsPage')renderProducts();
+ if(id==='accountsPage')renderAccounts();
+}
+function nextBill(){
+ let n=Number(localStorage.getItem(BILLKEY)||0)+1;localStorage.setItem(BILLKEY,n);
+ return 'SCC-'+String(n).padStart(5,'0');
+}
+let currentBill=nextBill();
+document.getElementById('billNo').textContent=currentBill;
+document.getElementById('billDate').textContent=new Date().toLocaleString('en-IN');
+
+function addByCode(code){
+ code=(code||document.getElementById('codeInput').value).trim().toUpperCase();
+ if(!code)return;
+ const p=products.find(x=>x.code.toUpperCase()===code);
+ if(!p){alert('Product code not found: '+code);return;}
+ if(Number(p.stock)<=0){alert('This product is out of stock.');return;}
+ const ex=cart.find(x=>x.code===p.code);
+ if(ex){if(ex.qty>=Number(p.stock)){alert('Available stock: '+p.stock);return;}ex.qty++;}
+ else cart.push({code:p.code,name:p.name,rate:Number(p.rate),qty:1});
+ document.getElementById('codeInput').value='';
+ renderCart();
+ showPage('billingPage',document.querySelectorAll('nav button')[1]);
+}
+function paymentChanged(){
+ const type=document.getElementById('paymentType').value;
+ const paid=document.getElementById('paidAmount');
+ if(type==='cash')paid.value=0;
+ if(type==='credit')paid.value=0;
+ renderCart();
+}
+function renderCart(){
+ const body=document.getElementById('cartBody');body.innerHTML='';
+ let subtotal=0;
+ cart.forEach((x,i)=>{
+  const amount=x.rate*x.qty;subtotal+=amount;
+  body.innerHTML+=`<tr><td>${esc(x.name)}<br><small>${esc(x.code)}</small></td><td>₹${money(x.rate)}</td>
+  <td><input style="width:70px;margin:0" type="number" min="1" value="${x.qty}" onchange="changeQty(${i},this.value)"></td>
+  <td>₹${money(amount)}</td><td class="no-print"><button class="danger" onclick="removeCart(${i})">X</button></td></tr>`;
+ });
+ let dis=Math.max(0,Number(document.getElementById('discount').value||0));if(dis>subtotal)dis=subtotal;
+ const total=subtotal-dis;
+ let type=document.getElementById('paymentType').value;
+ let paid=Number(document.getElementById('paidAmount').value||0);
+ if(type==='cash')paid=total;
+ if(type==='credit')paid=0;
+ if(type==='partial')paid=Math.min(total,Math.max(0,paid));
+ let due=Math.max(0,total-paid);
+ document.getElementById('subtotal').textContent=money(subtotal);
+ document.getElementById('discountShow').textContent=money(dis);
+ document.getElementById('grandTotal').textContent=money(total);
+ document.getElementById('paidShow').textContent=money(paid);
+ document.getElementById('dueShow').textContent=money(due);
+ const badge=document.getElementById('paymentBadge');
+ badge.className='badge '+(due>0?'credit':'cash');
+ badge.textContent=due>0?(paid>0?'अर्धे रोकड + उधारी':'उधारी / Credit'):'रोकड / Cash';
+ document.getElementById('printCustomer').textContent=document.getElementById('customer').value;
+ document.getElementById('printMobile').textContent=document.getElementById('customerMobile').value;
+}
+function changeQty(i,v){
+ let q=Math.max(1,parseInt(v)||1),p=products.find(x=>x.code===cart[i].code);
+ if(q>Number(p.stock)){alert('Available stock: '+p.stock);q=Number(p.stock);}
+ cart[i].qty=q;renderCart();
+}
+function removeCart(i){cart.splice(i,1);renderCart();}
+function saveBill(){
+ if(cart.length===0){alert('Cart is empty.');return;}
+ const customer=document.getElementById('customer').value.trim();
+ const mobile=document.getElementById('customerMobile').value.trim();
+ const type=document.getElementById('paymentType').value;
+ if((type==='credit'||type==='partial')&&!customer){alert('उधारीसाठी Customer Name आवश्यक आहे.');return;}
+ for(const item of cart){
+  const p=products.find(x=>x.code===item.code);
+  if(!p||Number(p.stock)<item.qty){alert('Stock बदलला आहे: '+item.name);return;}
+ }
+ let subtotal=cart.reduce((a,x)=>a+x.rate*x.qty,0);
+ let dis=Math.min(subtotal,Math.max(0,Number(document.getElementById('discount').value||0)));
+ let total=subtotal-dis;
+ let paid=Number(document.getElementById('paidAmount').value||0);
+ if(type==='cash')paid=total;
+ if(type==='credit')paid=0;
+ if(type==='partial')paid=Math.min(total,Math.max(0,paid));
+ let due=total-paid;
+ cart.forEach(item=>{const p=products.find(x=>x.code===item.code);p.stock=Number(p.stock)-item.qty;});
+ const bill={
+  billNo:currentBill,date:new Date().toISOString(),customer:customer||'Walk-in Customer',mobile,
+  type,subtotal,discount:dis,total,paid,due,
+  items:cart.map(x=>({...x}))
+ };
+ bills.push(bill);saveProducts();saveBills();
+ alert('Bill saved!\\nTotal: ₹'+money(total)+'\\nPaid: ₹'+money(paid)+'\\nDue: ₹'+money(due)+'\\nStock updated.');
+ newBill();
+}
+function newBill(){
+ cart=[];document.getElementById('customer').value='';document.getElementById('customerMobile').value='';
+ document.getElementById('discount').value=0;document.getElementById('paymentType').value='cash';document.getElementById('paidAmount').value=0;
+ currentBill=nextBill();document.getElementById('billNo').textContent=currentBill;document.getElementById('billDate').textContent=new Date().toLocaleString('en-IN');
+ renderCart();
+}
+function saveProduct(){
+ const code=document.getElementById('pCode').value.trim().toUpperCase(),name=document.getElementById('pName').value.trim();
+ const rate=Number(document.getElementById('pRate').value),stock=Number(document.getElementById('pStock').value);
+ if(!code||!name||rate<0||stock<0){alert('सर्व Product details भरा.');return;}
+ const old=products.find(x=>x.code===code);
+ if(old){old.name=name;old.rate=rate;old.stock=stock;}else products.push({code,name,rate,stock});
+ saveProducts();clearProductForm();alert(old?'Product updated.':'Product added.');
+}
+function clearProductForm(){['pCode','pName','pRate','pStock'].forEach(id=>document.getElementById(id).value='');}
+function renderProducts(){
+ const b=document.getElementById('productBody');b.innerHTML='';
+ products.forEach((p,i)=>b.innerHTML+=`<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td>₹${money(p.rate)}</td><td>${p.stock}</td>
+ <td><button class="primary" onclick="openCode('${esc(p.code)}')">🏷️ Code</button></td>
+ <td><button class="secondary" onclick="editProduct(${i})">Edit</button> <button class="danger" onclick="deleteProduct(${i})">Delete</button></td></tr>`);
+}
+function editProduct(i){const p=products[i];document.getElementById('pCode').value=p.code;document.getElementById('pName').value=p.name;document.getElementById('pRate').value=p.rate;document.getElementById('pStock').value=p.stock;}
+function deleteProduct(i){if(confirm('Delete '+products[i].name+'?')){products.splice(i,1);saveProducts();}}
+function renderStock(){
+ const q=(document.getElementById('stockSearch')?.value||'').toLowerCase(),b=document.getElementById('stockBody');if(!b)return;b.innerHTML='';
+ products.filter(p=>p.code.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)).forEach(p=>
+ b.innerHTML+=`<tr><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td>₹${money(p.rate)}</td><td class="${Number(p.stock)<=3?'low':''}">${p.stock}</td></tr>`);
+}
+function renderAccounts(){
+ const q=(document.getElementById('accountSearch')?.value||'').toLowerCase();
+ const grouped={};
+ bills.filter(b=>Number(b.due)>0).forEach(b=>{
+  const key=(b.mobile||b.customer).toLowerCase();
+  if(!grouped[key])grouped[key]={customer:b.customer,mobile:b.mobile,total:0,paid:0,due:0};
+  grouped[key].total+=Number(b.total);grouped[key].paid+=Number(b.paid);grouped[key].due+=Number(b.due);
+ });
+ const body=document.getElementById('accountsBody');body.innerHTML='';
+ Object.values(grouped).filter(a=>(a.customer+' '+a.mobile).toLowerCase().includes(q)).forEach(a=>
+ body.innerHTML+=`<tr><td>${esc(a.customer)}</td><td>${esc(a.mobile)}</td><td>₹${money(a.total)}</td><td>₹${money(a.paid)}</td><td class="low">₹${money(a.due)}</td></tr>`);
+ const cb=document.getElementById('creditBody');cb.innerHTML='';
+ bills.filter(b=>Number(b.due)>0).slice().reverse().forEach(b=>
+ cb.innerHTML+=`<tr><td>${esc(b.billNo)}</td><td>${esc(b.customer)}</td><td>${new Date(b.date).toLocaleDateString('en-IN')}</td>
+ <td>${b.type==='credit'?'उधारी': 'अर्धे रोकड + उधारी'}</td><td>₹${money(b.total)}</td><td>₹${money(b.paid)}</td><td class="low">₹${money(b.due)}</td></tr>`);
+}
+function openCode(code){
+ codeForPrint=products.find(p=>p.code===code);if(!codeForPrint)return;
+ document.getElementById('codeModal').style.display='block';document.getElementById('modalTitle').textContent=codeForPrint.name;
+ document.getElementById('modalCode').textContent=codeForPrint.code;
+ document.getElementById('qrcode').innerHTML='';
+ new QRCode(document.getElementById('qrcode'),{text:codeForPrint.code,width:160,height:160});
+ JsBarcode('#barcode',codeForPrint.code,{format:'CODE128',width:2,height:55,displayValue:true});
+}
+function closeCode(){document.getElementById('codeModal').style.display='none';}
+function printCode(){
+ if(!codeForPrint)return;
+ const w=window.open('','_blank','width=450,height=600');
+ w.document.write(`<html><head><title>${esc(codeForPrint.name)}</title><style>body{text-align:center;font-family:Arial;padding:20px}img{margin:10px}svg{max-width:100%}</style></head><body>
+ <h2>सागर क्लॉथ सेंटर</h2><h3>${esc(codeForPrint.name)}</h3><p>₹${money(codeForPrint.rate)}</p><p><b>${esc(codeForPrint.code)}</b></p>
+ <div>${document.getElementById('qrcode').innerHTML}</div><div>${document.getElementById('barcode').outerHTML}</div>
+ <script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+ w.document.close();
+}
+function startScanner(){
+ if(scanner)return;
+ scanner=new Html5Qrcode("reader");
+ scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250}},
+  text=>{document.getElementById('scanStatus').textContent='Scanned: '+text;stopScanner();addByCode(text);},
+  ()=>{}
+ ).catch(()=>{document.getElementById('scanStatus').textContent='Camera सुरू झाले नाही. Camera permission द्या आणि HTTPS GitHub Pages link वापरा.';scanner=null;});
+}
+function stopScanner(){if(scanner){scanner.stop().then(()=>{scanner.clear();scanner=null;}).catch(()=>{scanner=null;});}}
+updateDashboard();renderStock();renderProducts();renderAccounts();renderCart();
+</script>
+</body>
+</html>
