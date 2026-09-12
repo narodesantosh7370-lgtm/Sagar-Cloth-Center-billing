@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Sagar Cloth Centre Billing</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#f1f3f6;
+    margin:0;
+    padding:15px;
+}
+
+.box{
+    max-width:520px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    box-shadow:0 3px 15px #ccc;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:5px;
+}
+
+.shop{
+    text-align:center;
+    color:#555;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin:6px 0 12px;
+    box-sizing:border-box;
+    border:1px solid #ccc;
+    border-radius:8px;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    padding:13px;
+    margin-top:8px;
+    border:0;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.add{
+    background:#1976d2;
+    color:white;
+}
+
+.generate{
+    background:#2e7d32;
+    color:white;
+}
+
+.print{
+    background:#6a1b9a;
+    color:white;
+}
+
+.save{
+    background:#ef6c00;
+    color:white;
+}
+
+.item{
+    padding:10px 0;
+    border-bottom:1px solid #ddd;
+}
+
+.total{
+    text-align:right;
+    margin-top:10px;
+    font-size:18px;
+}
+
+.final{
+    font-size:23px;
+    font-weight:bold;
+    margin-top:12px;
+}
+
+#billPreview{
+    display:none;
+    margin-top:25px;
+    padding:20px;
+    border:2px solid #222;
+    border-radius:10px;
+    background:white;
+}
+
+.billHead{
+    text-align:center;
+}
+
+.billInfo{
+    display:flex;
+    justify-content:space-between;
+    margin:12px 0;
+}
+
+.billTable{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+
+.billTable th,
+.billTable td{
+    border-bottom:1px solid #ccc;
+    padding:8px;
+    text-align:left;
+}
+
+@media print{
+
+    body{
+        background:white;
+        padding:0;
+    }
+
+    .box > *:not(#billPreview){
+        display:none !important;
+    }
+
+    #billPreview{
+        display:block !important;
+        border:0;
+        margin:0;
+    }
+
+    .print,
+    .save{
+        display:none !important;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>SAGAR CLOTH CENTRE</h1>
+
+<div class="shop">
+कपड्यांचे भव्य दालन
+</div>
+
+<label>ग्राहकाचे नाव</label>
+<input id="customer" placeholder="ग्राहकाचे नाव">
+
+<label>वस्तूचे नाव</label>
+<input id="product" placeholder="उदा. Shirt">
+
+<label>किंमत</label>
+<input id="price" type="number" placeholder="उदा. 500">
+
+<label>Quantity</label>
+<input id="qty" type="number" value="1">
+
+<button class="add" onclick="addItem()">
+➕ वस्तू Add करा
+</button>
+
+<div id="items"></div>
+
+<div class="total">
+एकूण: ₹<span id="total">0</span>
+</div>
+
+<label>Discount (%)</label>
+<input id="discount"
+       type="number"
+       value="0"
+       oninput="calculateFinal()">
+
+<div class="final">
+Final Amount: ₹<span id="final">0</span>
+</div>
+
+<button class="generate" onclick="generateBill()">
+🧾 बिल तयार करा
+</button>
+
+
+<!-- BILL PREVIEW -->
+
+<div id="billPreview">
+
+<div class="billHead">
+
+<h2>SAGAR CLOTH CENTRE</h2>
+
+<p>
+कपड्यांचे भव्य दालन
+</p>
+
+</div>
+
+<div class="billInfo">
+
+<div>
+<b>Bill No:</b>
+<span id="billNo"></span>
+</div>
+
+<div>
+<b>Date:</b>
+<span id="billDate"></span>
+</div>
+
+</div>
+
+<p>
+<b>ग्राहक:</b>
+<span id="billCustomer"></span>
+</p>
+
+<table class="billTable">
+
+<thead>
+
+<tr>
+<th>वस्तू</th>
+<th>Qty</th>
+<th>Amount</th>
+</tr>
+
+</thead>
+
+<tbody id="billItems"></tbody>
+
+</table>
+
+<div class="total">
+एकूण: ₹<span id="billTotal"></span>
+</div>
+
+<div class="total">
+Discount: <span id="billDiscount"></span>%
+</div>
+
+<div class="final">
+Final: ₹<span id="billFinal"></span>
+</div>
+
+<p style="text-align:center;margin-top:25px;">
+धन्यवाद! पुन्हा भेट द्या 🙏
+</p>
+
+</div>
+
+
+<button class="print" onclick="printBill()">
+🖨️ Print / PDF
+</button>
+
+<button class="save" onclick="saveBill()">
+💾 Save Bill
+</button>
+
+</div>
+
+
+<script>
+
+let cart = [];
+let total = 0;
+
+
+/* BILL NUMBER */
+
+function getBillNumber(){
+
+    let number =
+    Number(localStorage.getItem("billNumber") || 0);
+
+    number++;
+
+    localStorage.setItem("billNumber",number);
+
+    return "SCC-" +
+    String(number).padStart(4,"0");
+}
+
+
+/* ADD ITEM */
+
+function addItem(){
+
+    let product =
+    document.getElementById("product").value;
+
+    let price =
+    Number(document.getElementById("price").value);
+
+    let qty =
+    Number(document.getElementById("qty").value);
+
+    if(product=="" || price<=0 || qty<=0){
+
+        alert("वस्तू, किंमत आणि Quantity भरा");
+
+        return;
+    }
+
+    let amount = price * qty;
+
+    cart.push({
+        product:product,
+        price:price,
+        qty:qty,
+        amount:amount
+    });
+
+    total += amount;
+
+    showItems();
+
+    document.getElementById("product").value="";
+    document.getElementById("price").value="";
+    document.getElementById("qty").value="1";
+}
+
+
+/* SHOW ITEMS */
+
+function showItems(){
+
+    let html="";
+
+    cart.forEach(function(item,index){
+
+        html += `
+        <div class="item">
+
+        <b>${index+1}. ${item.product}</b>
+
+        <br>
+
+        ₹${item.price} × ${item.qty}
+        = ₹${item.amount}
+
+        </div>
+        `;
+
+    });
+
+    document.getElementById("items").innerHTML=html;
+
+    document.getElementById("total").innerText=total;
+
+    calculateFinal();
+}
+
+
+/* FINAL AMOUNT */
+
+function calculateFinal(){
+
+    let discount =
+    Number(document.getElementById("discount").value);
+
+    let discountAmount =
+    total * discount / 100;
+
+    let finalAmount =
+    total - discountAmount;
+
+    document.getElementById("final").innerText =
+    finalAmount.toFixed(2);
+}
+
+
+/* GENERATE BILL */
+
+function generateBill(){
+
+    let customer =
+    document.getElementById("customer").value;
+
+    if(customer==""){
+
+        alert("ग्राहकाचे नाव टाका");
+
+        return;
+    }
+
+    if(cart.length==0){
+
+        alert("किमान एक वस्तू Add करा");
+
+        return;
+    }
+
+    let billNumber=getBillNumber();
+
+    let now=new Date();
+
+    let date =
+    now.toLocaleDateString("en-IN");
+
+    let time =
+    now.toLocaleTimeString("en-IN");
+
+
+    let discount =
+    Number(document.getElementById("discount").value);
+
+    let discountAmount =
+    total * discount / 100;
+
+    let finalAmount =
+    total-discountAmount;
+
+
+    document.getElementById("billNo").innerText=
+    billNumber;
+
+    document.getElementById("billDate").innerText=
+    date+" "+time;
+
+    document.getElementById("billCustomer").innerText=
+    customer;
+
+    document.getElementById("billTotal").innerText=
+    total.toFixed(2);
+
+    document.getElementById("billDiscount").innerText=
+    discount;
+
+    document.getElementById("billFinal").innerText=
+    finalAmount.toFixed(2);
+
+
+    let html="";
+
+    cart.forEach(function(item){
+
+        html += `
+        <tr>
+
+        <td>${item.product}</td>
+
+        <td>${item.qty}</td>
+
+        <td>₹${item.amount.toFixed(2)}</td>
+
+        </tr>
+        `;
+
+    });
+
+    document.getElementById("billItems").innerHTML=
+    html;
+
+
+    document.getElementById("billPreview").style.display=
+    "block";
+}
+
+
+/* PRINT */
+
+function printBill(){
+
+    if(document.getElementById("billNo").innerText==""){
+
+        alert("आधी बिल तयार करा");
+
+        return;
+    }
+
+    window.print();
+}
+
+
+/* SAVE BILL */
+
+function saveBill(){
+
+    let bill =
+    document.getElementById("billPreview").innerText;
+
+    if(bill.trim()==""){
+
+        alert("आधी बिल तयार करा");
+
+        return;
+    }
+
+    let file =
+    new Blob([bill],{type:"text/plain"});
+
+    let url =
+    URL.createObjectURL(file);
+
+    let a =
+    document.createElement("a");
+
+    a.href=url;
+
+    a.download=
+    document.getElementById("billNo").innerText+
+    ".txt";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+</script>
+
+</body>
+</html>
